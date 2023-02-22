@@ -1,4 +1,4 @@
-import sys
+import sys, random
 import pygame
 from pygame.locals import *
 from pygame import mixer
@@ -16,8 +16,21 @@ screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)
 display = pygame.Surface(WINDOW_SIZE)
 
 clock = pygame.time.Clock()
+game_map = {}
 
-ground_image = pygame.image.load('ground-1.png')
+ground_image = pygame.image.load('earth/sprite_01.png')
+dirt_image = pygame.image.load('earth/sprite_05.png')
+oak_seed_image = pygame.image.load('oak_seed.png')
+
+TILE_SIZE = ground_image.get_width()
+TILE_SIZE_SCALE = round(TILE_SIZE*0.05)
+ground_image_resized = pygame.transform.scale(ground_image,(TILE_SIZE_SCALE, TILE_SIZE_SCALE))
+dirt_image_resized = pygame.transform.scale(dirt_image,(TILE_SIZE_SCALE, TILE_SIZE_SCALE))
+
+tile_index = {  1: ground_image_resized,
+                2: dirt_image_resized,
+                3: oak_seed_image
+            }
 
 bg1_image = pygame.image.load('clouds/1.png')
 bg2_image = pygame.image.load('clouds/6.png')
@@ -29,17 +42,27 @@ bg5_image = pygame.image.load('clouds/5.png')
 single_cloud_image = pygame.image.load('clouds/3.png')
 single_cloud_image.set_alpha(230)
 
-def load_map(path):
-    f = open(path+".txt", "r")
-    data = f.read()
-    f.close()
-    data = data.split('\n')
-    game_map = []
-    for row in data:
-        game_map.append(list(row))
-    return game_map
+CHUNK_SIZE = 8
+def generate_chunk(x,y):
+    chunk_data = []
+    for y_pos in range(CHUNK_SIZE):
+        for x_pos in range(CHUNK_SIZE):
+            target_x = x * CHUNK_SIZE + x_pos
+            target_y = y * CHUNK_SIZE + y_pos
+            tile_type = 0
+            if target_y > 10:
+                tile_type = 2 # dirt
+            elif target_y == 10:
+                tile_type = 1 # grass
+            elif target_y == 9:
+                if random.randint(1,99) == 1: # chance of spawning an oak seed
+                    tile_type = 3 # oak seed
+            if tile_type != 0:
+                # print('ADD CHUNK DATA')
+                # print(target_x, target_y, tile_type)
+                chunk_data.append([[target_x, target_y], tile_type])
+    return chunk_data
 
-game_map = load_map('map')
 
 def collision_test(rect, tiles):
     hit_list = []
@@ -120,16 +143,12 @@ velocity = 0.2
 
 true_scroll = [0,0]
 
-TILE_SIZE = ground_image.get_width()
-TILE_SIZE_SCALE = TILE_SIZE*0.5
-ground_image_resized = pygame.transform.scale(ground_image,(TILE_SIZE_SCALE, TILE_SIZE_SCALE))
-
 player_rect = pygame.Rect(200, 200, 64, 45)
 
-print("TILE SIZE "+str(TILE_SIZE))
+print("TILE SIZE "+str(TILE_SIZE*0.05))
 
 FACTOR_SCALE = 1.4
-PLAYER_MOVEMENT_SPEED = 2
+PLAYER_MOVEMENT_SPEED = 3
 
 #   draw background
 image = pygame.transform.scale(bg1_image, (bg1_image.get_width()*FACTOR_SCALE, bg1_image.get_height()*FACTOR_SCALE))
@@ -149,16 +168,12 @@ img3_x = 0
 clouds_x = 0
 clouds_y = 0
 main_text = "Si tengo apetito es solo..."
-main_text_french = "Si j’ai du goût, ce n’est guère..."
 
 main_font_french = pygame.font.SysFont('Verdana', 50)
 main_font = pygame.font.SysFont('Verdana', 20)
 
 run = True
 while run:
-    # paint background
-    display.fill((146,244,255))
-
     #   scroll and camera offset
     true_scroll[0] += (player_rect.x-true_scroll[0]-300)/5
     true_scroll[1] += (player_rect.y-true_scroll[1]-290)/5
@@ -173,11 +188,8 @@ while run:
     display.blit(image3, (clouds_x, clouds_y))
     
     #   create and render background poem
-    main_text_french_render = main_font_french.render(main_text_french, True, (255,0,0))
     main_text_render = main_font.render(main_text, True, (0,0,0))
     main_text_render.set_alpha(125)
-    
-    # display.blit(main_text_french_render, (100, 100))
     display.blit(main_text_render, (200, 100))
 
 
@@ -214,20 +226,21 @@ while run:
 
 
     tile_rects = []
-
     #   display tiles and things and 
-    y = 0
-    for row in game_map:
-        x = 0
-        for tile in row:
-            if tile == '1':
-                display.blit(ground_image_resized, (x * TILE_SIZE_SCALE-scroll[0], y * TILE_SIZE_SCALE-scroll[1]))
-            # if tile == '2':
-                # display.blit(shopp, (x * TILE_SIZE-scroll[0], y * TILE_SIZE-scroll[1]))
-            if tile not in ['0', '2']:
-                tile_rects.append(pygame.Rect(x * TILE_SIZE_SCALE, y * TILE_SIZE_SCALE, TILE_SIZE_SCALE, TILE_SIZE_SCALE))
-            x += 1
-        y += 1
+    for y in range(3):
+        for x in range(4):
+            target_x = x - 1 + int(round(scroll[0]/(CHUNK_SIZE*TILE_SIZE_SCALE)))
+            target_y = y - 1 + int(round(scroll[1]/(CHUNK_SIZE*TILE_SIZE_SCALE)))
+            target_chunk = str(target_x) + ':' + str(target_y)
+            print(target_chunk)
+            if target_chunk not in game_map:
+                game_map[target_chunk] = generate_chunk(target_x, target_y)
+                print(game_map[target_chunk])
+            for tile in game_map[target_chunk]:
+                display.blit(tile_index[tile[1]], (tile[0][0]*TILE_SIZE_SCALE-scroll[0], tile[0][1]*TILE_SIZE_SCALE-scroll[1]))
+                if tile[1] in [1,2]:
+                    tile_rects.append(pygame.Rect(tile[0][0]*TILE_SIZE_SCALE, tile[0][1]*TILE_SIZE_SCALE, TILE_SIZE_SCALE, TILE_SIZE_SCALE))
+
 
 
 
