@@ -1,0 +1,1 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/fabianwgl/ca.py-game/badge)](https://www.codefactor.io/repository/github/fabianwgl/ca.py-game)
