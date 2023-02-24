@@ -2,7 +2,7 @@
 
 # Revolving Hearts (demo)
 
-![Alt Text](rh-demo.gif)
+![demo](rh-demo.gif)
 
 ## requirements
 - python
