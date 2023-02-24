@@ -274,8 +274,9 @@ while run:
         # player_movement[1] += PLAYER_MOVEMENT_SPEED
     if moving_down:
         # print('moving down')
-        alpha += 1
-        clouds_y -= 0.09
+        if clouds_y > 0:
+            alpha += 1
+            clouds_y -= 0.09
         # player_movement[1] -= PLAYER_MOVEMENT_SPEED
         
     # print(player_y_momentum)
