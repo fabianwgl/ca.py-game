@@ -126,6 +126,7 @@ def change_action(action_var, frame, new_value):
 animation_database = {}
 animation_database['walk'] = load_animation('capy/walk', [4,4,4,4,4,4,4,4])
 animation_database['sitting-idle'] = load_animation('capy/sitting-idle', [4,4,4,4,4,4,4,4])
+animation_database['idle'] = load_animation('capy/idle', [4,4,4,4,4,4,4,4])
 animation_database['munch'] = load_animation('capy/munch', [4,4,4,4,4,4,4,4])
 
 player_action = 'walk'
@@ -177,6 +178,8 @@ eaten_oaks = []
 
 main_font_french = pygame.font.SysFont('Verdana', 50)
 main_font = pygame.font.SysFont('Verdana', 20)
+
+player_ticks_idle = 0
 
 run = True
 while run:
@@ -259,6 +262,10 @@ while run:
     # print('OAKSEEDS')
     # print(oak_seeds)
 
+    if moving_right or moving_left or moving_up:
+        #   reset ticks count since inactive
+        player_ticks_idle = 0
+
     player_movement = [0,0]
     if moving_right and not moving_down:
         # clouds_x += 0.03
@@ -303,7 +310,7 @@ while run:
         player_action, player_frame = change_action(player_action, player_frame, 'walk')
         player_flip = True
     if player_movement[0] == 0: #   idle
-        player_action, player_frame = change_action(player_action, player_frame, 'sitting-idle')
+        player_action, player_frame = change_action(player_action, player_frame, 'idle')
     if moving_down and not moving_left: #   munch right
         player_action, player_frame = change_action(player_action, player_frame, 'munch')
     if moving_down and moving_left: #   munch left
@@ -332,6 +339,12 @@ while run:
     if collisions['right']:
         print('COLLISSIONS RIGHT')
         print(collisions)
+
+    #   change idle animation after 3 seconds standing
+    if player_ticks_idle >= 90:
+        # player_ticks_idle =
+        player_action, player_frame = change_action(player_action, player_frame, 'sitting-idle')
+
 
     #   draw player sprite
     player_frame += 1
@@ -377,4 +390,5 @@ while run:
     screen.blit(display, (0,0))
     pygame.display.update()
     clock.tick(30)
+    player_ticks_idle += 1
     # print(clock.get_fps())
